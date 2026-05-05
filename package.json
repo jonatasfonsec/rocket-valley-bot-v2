@@ -1,0 +1,20 @@
+{
+  "name": "rocket-valley-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+	"start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+	"dev": "node --inspect src/index.js",
+	"dev-brk": "node --inspect-brk src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "discord.js": "^14.26.3",
+    "dotenv": "^17.4.2"
+  }
+}
