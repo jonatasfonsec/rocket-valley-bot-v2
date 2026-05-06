@@ -46,17 +46,22 @@ module.exports.handle = async (interaction) => {
     if (sessions.has(user.id)) {
       const sess = sessions.get(user.id);
       const existingCh = guild.channels.cache.get(sess.channelId);
-      return interaction.editReply({
-        content: existingCh
-          ? `❌ Você já possui uma WL em andamento: ${existingCh}`
-          : '❌ Você já possui uma WL em andamento.'
-      });
-    }
+	  
+    if (!existingCh) {
+    // Canal não existe mais, limpa a sessão e deixa continuar
+    sessions.end(user.id);
+	} else {
+    return interaction.editReply({
+      content: `❌ Você já possui uma WL em andamento: ${existingCh}`
+    });
+  }
+}
 
     // Canal duplicado por nome (segurança extra)
     const existing = guild.channels.cache.find(c => c.name === `allowlist-${user.id}`);
     if (existing) {
-      return interaction.editReply({ content: `❌ Já existe canal de WL: ${existing}` });
+      sessions.end(user.id); // limpa sessão órfã
+	  return interaction.editReply({ content: `❌ Já existe canal de WL: ${existing}` });
     }
 
     // Categoria de WL
