@@ -31,19 +31,13 @@ module.exports = {
       await member.roles.add(config.roles.turist).catch(() => {});
     }
 
-    // ── DM de boas-vindas com botões da WL ─────────────────────────────────
-    const dmEmbed = new EmbedBuilder()
-      .setColor(config.embedColor)
-      .setTitle('🌵 Bem-vindo(a) ao Rocket Valley!')
-      .setDescription(
-        `Olá, **${member.user.username}**! Seja muito bem-vindo(a)!\n\n` +
-        `Para ter acesso ao servidor, você precisa realizar a **Allowlist**.\n\n` +
-        `📋 Acesse o canal de WL no servidor e clique em **Iniciar Allowlist**.\n` +
-        `Você também pode usar o botão abaixo para começar diretamente.\n\n` +
-        `⚠️ Se tiver um **codiguin** de pré-aprovação, use o botão correspondente.`
-      )
-      .setFooter({ text: config.footerText })
-      .setTimestamp();
+    // ── DM de boas-vindas redirecionando para o canal da WL ─────────────────────────────────	
+	const wlChannelId = config.channels.wlPanel;
+if (wlChannelId) {
+  await member.send({
+    content: `👋 Olá, **${member.user.username}**! Bem-vindo(a) ao **Rocket Valley**!\n\nPara ter acesso ao servidor, acesse o canal <#${wlChannelId}> e clique em **Iniciar Allowlist**.`
+  }).catch(() => {});
+}
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
