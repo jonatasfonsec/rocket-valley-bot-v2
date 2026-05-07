@@ -120,7 +120,7 @@ module.exports.handle = async (interaction) => {
 
     // Pingar cargo de staff se configurado
     if (config.roles.staff) {
-      await channel.send({ content: `<@&${config.roles.staff}>` }).then(m => m.delete().catch(() => {}));
+      await channel.send({ content: `<@&${config.roles.staff}>` }).then(m => m.delete().catch(() => { }));
     }
 
     return interaction.editReply({ content: `✅ Ticket criado: ${channel}` });
@@ -128,6 +128,7 @@ module.exports.handle = async (interaction) => {
 
   // ── Fechar ticket ─────────────────────────────────────────────────────────
   if (customId.startsWith('ticket_close_')) {
+
     await interaction.deferReply({ ephemeral: true });
 
     const member = await guild.members.fetch(user.id).catch(() => null);
@@ -139,7 +140,6 @@ module.exports.handle = async (interaction) => {
         (config.roles.staff && member.roles.cache.has(config.roles.staff))
       ));
 
-    // Dono do ticket também pode fechar
     const parts = customId.split('_');
     const ticketOwnerId = parts[2];
     const isOwner = user.id === ticketOwnerId;
@@ -148,11 +148,46 @@ module.exports.handle = async (interaction) => {
       return interaction.editReply({ content: '❌ Sem permissão para fechar este ticket.' });
     }
 
-    // Logar fechamento
+    // Buscar histórico do canal
+    let historico = `📋 HISTÓRICO DO TICKET: ${interaction.channel.name}\n`;
+    historico += `📅 Fechado em: ${new Date().toLocaleString('pt-BR')}\n`;
+    historico += `👤 Fechado por: ${user.tag}\n`;
+    historico += `${'─'.repeat(50)}\n\n`;
+
+    let lastId = null;
+    let continuar = true;
+
+    while (continuar) {
+      const msgs = await interaction.channel.messages.fetch({
+        limit: 100,
+        ...(lastId ? { before: lastId } : {})
+      });
+
+      if (msgs.size === 0) break;
+
+      const ordenadas = msgs.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+
+      for (const msg of ordenadas.values()) {
+        if (msg.author.bot && msg.embeds.length > 0) {
+          // Resumo de embeds do bot
+          historico += `[${new Date(msg.createdTimestamp).toLocaleString('pt-BR')}] 🤖 ${msg.author.tag} (embed): ${msg.embeds[0]?.description ?? msg.embeds[0]?.title ?? '(embed sem texto)'}\n`;
+        } else if (!msg.author.bot) {
+          historico += `[${new Date(msg.createdTimestamp).toLocaleString('pt-BR')}] ${msg.author.tag}: ${msg.content}\n`;
+        }
+      }
+
+      lastId = msgs.last()?.id;
+      if (msgs.size < 100) continuar = false;
+    }
+
+    // Salvar e enviar no canal de log
     const logChId = config.channels.finalizouTicket;
     if (logChId) {
       const logCh = guild.channels.cache.get(logChId);
       if (logCh) {
+        const buffer = Buffer.from(historico, 'utf-8');
+        const attachment = { attachment: buffer, name: `${interaction.channel.name}.txt` };
+
         const embed = new EmbedBuilder()
           .setColor(0xff0000)
           .setTitle('🔒 Ticket Fechado')
@@ -162,11 +197,12 @@ module.exports.handle = async (interaction) => {
           )
           .setTimestamp();
 
-        await logCh.send({ embeds: [embed] }).catch(() => {});
+        await logCh.send({ embeds: [embed], files: [attachment] }).catch(() => { });
       }
     }
 
     await interaction.editReply({ content: '🔒 Fechando ticket em 5 segundos...' });
-    setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
+    setTimeout(() => interaction.channel.delete().catch(() => { }), 5000);
+
   }
 };
